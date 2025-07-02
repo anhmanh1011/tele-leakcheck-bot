@@ -34,7 +34,6 @@ def leakcheck_query(query):
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            time.sleep(0.1)
             response = requests.get(url, headers=headers, timeout=30)
             logging.info(f"[LeakCheck Response] Status: {response.status_code} | Body: {response.text}")
             if response.status_code == 200:
