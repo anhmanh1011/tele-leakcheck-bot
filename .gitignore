@@ -1,0 +1,26 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Cấu hình môi trường ảo
+venv/
+ENV/
+.env
+.env.*
+
+# Log files
+*.log
+app.log
+
+# Thư mục leakcheck chứa kết quả
+leakcheck/
+
+# File cấu hình chứa secret
+config.json
+
+# MacOS
+.DS_Store
+
+# VSCode
+.vscode/ 
