@@ -5,6 +5,7 @@ from telebot.types import Message, InputFile
 import requests
 import logging
 import datetime
+import time
 
 # Cấu hình logging cho ứng dụng
 logging.basicConfig(
@@ -30,24 +31,31 @@ def leakcheck_query(query):
     url = f"https://leakcheck.io/api/v2/query/{query}?type=domain"
     headers = {"X-API-Key": LEAKCHECK_API_KEY}
     logging.info(f"[LeakCheck Request] URL: {url} | Headers: {headers}")
-    try:
-        response = requests.get(url, headers=headers, timeout=30)
-        logging.info(f"[LeakCheck Response] Status: {response.status_code} | Body: {response.text}")
-        if response.status_code == 200:
-            data = response.json()
-            # Trả về danh sách email nếu có
-            emails = set()
-            for result in data.get("result", []):
-                email = result.get("email")
-                if email:
-                    emails.add(email)
-            return emails
-        else:
-            logging.error(f"Leakcheck API error: {response.status_code} {response.text}")
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            logging.info(f"[LeakCheck Response] Status: {response.status_code} | Body: {response.text}")
+            if response.status_code == 200:
+                data = response.json()
+                emails = set()
+                for result in data.get("result", []):
+                    email = result.get("email")
+                    if email:
+                        emails.add(email)
+                return emails
+            elif response.status_code == 429:
+                logging.warning(f"Leakcheck API rate limited (429). Retry {attempt+1}/{max_retries} after 0.2s...")
+                time.sleep(0.2)
+                continue
+            else:
+                logging.error(f"Leakcheck API error: {response.status_code} {response.text}")
+                return set()
+        except Exception as e:
+            logging.error(f"Exception when calling leakcheck: {e}")
             return set()
-    except Exception as e:
-        logging.error(f"Exception when calling leakcheck: {e}")
-        return set()
+    logging.error(f"Leakcheck API 429 after {max_retries} retries. Giving up.")
+    return set()
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message: Message):
